@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bra Size Guide</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 1rem;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 600px; /* Added max-height */
+            height: 80vh; /* Changed to max-height */
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; 
+            font-size: 14px; /* Base font size */
+        }
+        .close {
+            align-self: flex-end;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #007bff;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+      
+    .table-container {
+        flex-grow: 1;
+        overflow: hidden; /* Disable scrolling */
+        margin-bottom: 1rem;
+    }
+
+    table {
+        width: 100%;
+        height: 100%;
+        border-collapse: collapse;
+        table-layout: fixed; /* Fixed layout for better control */
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 4px;
+        text-align: center;
+        font-size: 0.9em; /* Slightly smaller font for table contents */
+    }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .filtered-mode tr:nth-child(even) {
+            background-color: transparent;
+        }
+        td.highlight {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .pickers {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1rem;
+        }
+        .picker {
+            width: 48%;
+            text-align: center;
+        }
+        .scroll-picker {
+            height: 120px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .scroll-picker-item {
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+        }
+        .scroll-picker-item.selected {
+            font-weight: bold;
+            color: #007bff;
+            background-color: #e9ecef;
+        }
+        .reset-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .reset-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .reset-link a:hover {
+            text-decoration: underline;
+        }
+        .recommendation {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .size-not-available {
+            color: #dc3545;
+            font-style: italic;
+        }
+        .table-title {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 480px) {
+        .modal-content {
+            font-size: 12px; /* Smaller base font size for mobile */
+        }
+
+        th, td {
+            padding: 2px;
+            font-size: 0.8em;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <button @click="showModal = true">Open Bra Size Guide</button>
+        
+        <div v-if="showModal" class="modal">
+            <div class="modal-content">
+                <span class="close" @click="closeModal">&times;</span>
+                <h2>Bra Size Guide</h2>
+                
+                <div class="pickers">
+                    <div class="picker">
+                        <h3>Cup</h3>
+                        <div class="scroll-picker" @scroll="updateCupSelection">
+                            <div v-for="(cup, index) in cups" :key="cup" 
+                                 class="scroll-picker-item" 
+                                 :class="{ selected: index === selectedCupIndex }">
+                                {{ cup }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="picker">
+                        <h3>Band</h3>
+                        <div class="scroll-picker" @scroll="updateBandSelection">
+                            <div v-for="(band, index) in bands" :key="band" 
+                                 class="scroll-picker-item" 
+                                 :class="{ selected: index === selectedBandIndex }">
+                                {{ band }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-title">Size Table</div>
+                <div class="table-container">
+                    <table :class="{ 'filtered-mode': isFiltered }">
+                        <thead>
+                            <tr>
+                                <th v-for="band in visibleBands" :key="band">{{ band }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="cup in visibleCups" :key="cup">
+                                <td v-for="band in visibleBands" :key="band" 
+                                    :class="{ highlight: isHighlighted(cup, band) }">
+                                    {{ getSizeLabel(cup, band) || 'N/A' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="recommendation" v-if="selectedCup && selectedBand">
+                    <template v-if="recommendedSize">
+                        Recommended Size: {{ recommendedSize }}
+                    </template>
+                    <template v-else>
+                        <span class="size-not-available">Size not available for the selected combination.</span>
+                    </template>
+                </div>
+                
+                <div class="reset-link">
+                    <a href="#" @click.prevent="resetView">Show all sizing</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const showModal = ref(false);
+                const cups = ['AA', 'A', 'B', 'C', 'D', 'DD / E', 'DDD / F', 'G'];
+                const bands = ['28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48'];
+                const selectedCupIndex = ref(null);
+                const selectedBandIndex = ref(null);
+
+                const sizeChart = {
+                    'AA': ['S', 'S', '', '', '', '', '', '', '', '', ''],
+                    'A': ['S', 'S', 'M', 'M', 'M', 'L', 'XL', '2X', '2X', '3X', ''],
+                    'B': ['S', 'M', 'M', 'M', 'L', 'L', 'XL', '2X', '3X', '3X', ''],
+                    'C': ['S', 'S', 'M', 'M', 'L', 'L', 'XL', 'XL', '2X', '3X', ''],
+                    'D': ['S', 'M', 'M', 'L', 'L', 'XL', 'XL', '2X', '3X', '3X', ''],
+                    'DD / E': ['S', 'M', 'M', 'L', 'XL', 'XL', '2X', '2X', '3X', '', ''],
+                    'DDD / F': ['', 'M', 'L', 'L', 'XL', '2X', '2X', '3X', '3X', '', ''],
+                    'G': ['', '', 'L', 'XL', '2X', '2X', '3X', '3X', '', '', '']
+                };
+
+                const selectedCup = computed(() => selectedCupIndex.value !== null ? cups[selectedCupIndex.value] : null);
+                const selectedBand = computed(() => selectedBandIndex.value !== null ? bands[selectedBandIndex.value] : null);
+
+                const isFiltered = computed(() => selectedCupIndex.value !== null || selectedBandIndex.value !== null);
+
+                const visibleCups = computed(() => {
+                    if (selectedCupIndex.value === null) return cups;
+                    const start = Math.max(0, selectedCupIndex.value - 1);
+                    const end = Math.min(cups.length - 1, selectedCupIndex.value + 1);
+                    return cups.slice(start, end + 1);
+                });
+
+                const visibleBands = computed(() => {
+                    if (selectedBandIndex.value === null) return bands;
+                    const start = Math.max(0, selectedBandIndex.value - 1);
+                    const end = Math.min(bands.length - 1, selectedBandIndex.value + 1);
+                    return bands.slice(start, end + 1);
+                });
+
+                const recommendedSize = computed(() => {
+                    if (selectedCup.value && selectedBand.value) {
+                        return getSizeLabel(selectedCup.value, selectedBand.value) || null;
+                    }
+                    return null;
+                });
+
+                const getSizeLabel = (cup, band) => {
+                    const bandIndex = bands.indexOf(band);
+                    return sizeChart[cup][bandIndex] || '';
+                };
+
+                const isHighlighted = (cup, band) => {
+                    return cup === selectedCup.value && band === selectedBand.value;
+                };
+
+                const updateCupSelection = (event) => {
+                    const scrollTop = event.target.scrollTop;
+                    selectedCupIndex.value = Math.round(scrollTop / 40);
+                };
+
+                const updateBandSelection = (event) => {
+                    const scrollTop = event.target.scrollTop;
+                    selectedBandIndex.value = Math.round(scrollTop / 40);
+                };
+
+                const resetView = () => {
+                    selectedCupIndex.value = null;
+                    selectedBandIndex.value = null;
+                    // Reset scroll positions
+                    setTimeout(() => {
+                        document.querySelectorAll('.scroll-picker').forEach(picker => {
+                            picker.scrollTop = 0;
+                        });
+                    }, 0);
+                };
+
+                const closeModal = () => {
+                    showModal.value = false;
+                    resetView();
+                };
+
+                return {
+                    showModal,
+                    cups,
+                    bands,
+                    selectedCupIndex,
+                    selectedBandIndex,
+                    selectedCup,
+                    selectedBand,
+                    visibleCups,
+                    visibleBands,
+                    recommendedSize,
+                    getSizeLabel,
+                    isHighlighted,
+                    isFiltered,
+                    updateCupSelection,
+                    updateBandSelection,
+                    resetView,
+                    closeModal
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
